@@ -1,0 +1,17 @@
+{
+  "name": "tiktok-live-ev-gencleri-dernegi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite client --host",
+    "build": "vite build client",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "three": "0.170.0",
+    "tiktok-live-connector": "^2.5.0"
+  },
+  "devDependencies": {
+    "vite": "5.4.11"
+  }
+}

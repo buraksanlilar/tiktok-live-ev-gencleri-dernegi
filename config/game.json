@@ -1,0 +1,9 @@
+{
+  "odaKapasite": 40,
+  "uyeZamanAsimiDk": 10,
+  "hediyeler": {
+    "Rose": { "eylem": "kaydir", "sureSn": 20 },
+    "TikTok": { "eylem": "kaydir", "sureSn": 40 }
+  },
+  "varsayilanEylem": null
+}

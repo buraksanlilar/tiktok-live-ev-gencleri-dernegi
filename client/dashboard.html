@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dernek Paneli</title>
+  <style>
+    :root { --bg: #0f1115; --kart: #181b21; --cizgi: #2a2f39; --yazi: #e8eaee; --soluk: #8b93a1; --vurgu: #5b9bff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--yazi); font: 14px/1.4 system-ui, 'Segoe UI', sans-serif;
+           display: grid; grid-template-columns: 360px 1fr 1fr; gap: 12px; padding: 12px; }
+    section { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 12px; padding: 14px; }
+    h2 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--soluk); }
+    label { display: grid; gap: 4px; margin: 8px 0; color: var(--soluk); }
+    input, button { background: #1f232b; color: var(--yazi); border: 1px solid var(--cizgi); border-radius: 8px; padding: 8px 10px; font: inherit; }
+    button { cursor: pointer; } button:hover { background: #2a2f3a; }
+    button.ana { background: var(--vurgu); color: #07101f; font-weight: 600; }
+    .iki { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    td { padding: 4px 6px; border-bottom: 1px solid var(--cizgi); }
+    #gunluk { font: 12px/1.5 ui-monospace, monospace; color: var(--soluk); white-space: pre-wrap; }
+    @media (max-width: 1000px) { body { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <section>
+    <h2>Kontrol</h2>
+    <div>TikTok: <span id="tiktokDurum">bekleniyor…</span></div>
+    <label>Hesap <input id="u" value="test1" /></label>
+    <label>Hediye adı (config/game.json hediyeler) <input id="hediyeAd" value="Rose" list="hediyeListe" /></label>
+    <datalist id="hediyeListe"></datalist>
+    <label>Coin <input id="coin" type="number" value="1" min="1" /></label>
+    <div class="iki">
+      <button id="yorum">💬 Yorum at</button>
+      <button id="hediye" class="ana">🎁 Hediye at</button>
+      <button id="rastgele">🎲 10 yorumcu</button>
+      <button id="sifirla">Odayı sıfırla</button>
+    </div>
+    <p><a href="/index.html" target="_blank" rel="noopener" style="color:var(--vurgu)">Oyunu aç ↗</a></p>
+  </section>
+  <section><h2>Oda <span id="ozet"></span></h2><table id="uyeler"></table></section>
+  <section><h2>Olay günlüğü</h2><div id="gunluk"></div></section>
+  <script type="module" src="/src/dashboard/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Ev Gençleri Derneği</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    /* 1080x1920 sahne, oran korunarak pencereye sığar; tuval ve HUD birlikte ölçeklenir */
+    #sahne { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+             height: min(100vh, 100vw * 16 / 9); aspect-ratio: 9 / 16; container-type: size; overflow: hidden; }
+    #game { display: block; width: 100%; height: 100%; }
+    /* HUD: 1 tasarım pikseli = var(--u); 1080 genişlik = 100cqw */
+    #hud { position: absolute; inset: 0; pointer-events: none; --u: calc(100cqw / 1080);
+           color: #fff; font: 700 calc(40 * var(--u)) system-ui, sans-serif; text-shadow: 0 2px 6px #000; }
+    #lider { position: absolute; top: calc(80 * var(--u)); width: 100%; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="sahne">
+    <canvas id="game"></canvas>
+    <div id="hud"><div id="lider"></div></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
