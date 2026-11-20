@@ -19,11 +19,14 @@ Elle düzenlemek istersen: scripti çalıştır, `kaynak/*.blend`'i aç, GLB ola
 
 ### Ev genci — `genc.glb` (`model.cmd genc`, önizleme `onizleme/genc.png`)
 - İskelet, Builder ve animasyon pişirme `tiktok-live-convoy/blender/kisi.py`'den alındı. ~1.76 m, yüz -Y.
-- Animasyonlar (döngü): `otur` (2.4 sn, yayılmış oturuş, etrafa bakınır), `kaydir` (1.2 sn, telefona gömülü, başparmakla iki kaydırma).
+- Animasyonlar (döngü): `otur` (2.4 sn, yayılmış oturuş, etrafa bakınır), `kaydir` (1.2 sn, telefona gömülü, başparmakla iki kaydırma),
+  `uyu` (3 sn), `atistir` (1.6 sn, cipsten ağza), `oyun` (4 sn, son üçte birde gamepad'i sarsar), `kpss` (2.4 sn, kitabın içindeki telefon).
+  Animasyon adı = `config/game.json` eylem adı; eylemin eşyaları `client/src/genc.js` → `ESYA`.
   İkisinde de **kalça kemiği başı orijinde**: kişi doğrudan koltuğun `oturma` noktasına konur.
 - Parçalar (ayrı düğümler, kod seçer; `client/src/genc.js`):
   `govde` (göbek, tişört, eşofman, beyaz çorap, terlik) · saç: `sac_kisa` | `sac_daginik` | yok (kel) · `sakal` ·
   lider: `sac_lider` (bele iner, uçları kırık) + `sakal_lider` (göbeğe iner, pala bıyık); uzun kısımlar `chest` kemiğiyle sallanır ·
-  `telefon` (sağ el; yalnız `kaydir` sırasında görünür).
+  eşyalar (yalnız ilgili eylemde görünür): `telefon` (sağ el), `cips` (sol el), `gamepad` (sağ ele bağlı, iki elin arası),
+  `kulaklik` (baş), `kitap` (sol el). Eldeki eşyalar animasyonun 0. karesindeki pozda kurulur (`pozlu`).
 - Malzemeler: kişiye göre boyananlar `ten`, `sac`, `ust`; sabitler `alt`, `corap`, `terlik`, `torba`, `telefon`, `ekran` (ışık saçar).
 - Lider kombinasyonu 1842 üçgen (sınır 3000).

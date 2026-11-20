@@ -1,9 +1,12 @@
 # Ev genci: iskeletli, animasyonlu low-poly kişi (eşofman, tişört, terlik), değiştirilebilir parçalarla.
 # Çalıştır: model.cmd genc   (iskelet/Builder/bake: tiktok-live-convoy/blender/kisi.py'den alındı)
 # Koordinat: 1 birim = 1 m, yüz -Y'ye bakar, +Z yukarı. Kalça kemiği başı oturma animasyonlarında orijinde.
-# Animasyonlar: otur (2.4 s, yayılmış oturuş, etrafa bakınır), kaydir (1.2 s, telefona eğilmiş, başparmakla kaydırır).
+# Animasyonlar: otur (2.4 s, yayılmış oturuş, etrafa bakınır), kaydir (1.2 s, telefona eğilmiş, başparmakla kaydırır),
+#   uyu (3 s, başı geriye düşmüş), atistir (1.6 s, cipsten ağza), oyun (4 s, oynar, sonunda gamepad'i sarsar),
+#   kpss (2.4 s, kitabın içindeki telefona bakar).
 # Parçalar (hepsi `iskelet`e bağlı ayrı mesh; kod istemediğini gizler):
-#   govde, sac_kisa | sac_daginik (yok = kel), sakal, sac_lider + sakal_lider (lider: yıllardır bakımsız), telefon.
+#   govde, sac_kisa | sac_daginik (yok = kel), sakal, sac_lider + sakal_lider (lider: yıllardır bakımsız),
+#   eşyalar: telefon, cips, gamepad, kulaklik, kitap.
 import math
 import random
 import tempfile
@@ -92,9 +95,10 @@ class Builder:
         self.dl = self.bm.verts.layers.deform.verify()
         self.uv = self.bm.loops.layers.uv.new("UVMap")
         self.yon = []  # (yüz, merkez, işaret): açık kabuklar için normal yönü (+1 merkezden dışa)
+        self.tf = None  # verilirse noktalar bununla dönüştürülür (pozlu uzay -> dinlenme uzayı, bkz. pozlu)
 
     def vert(self, co, bone):
-        v = self.bm.verts.new(co)
+        v = self.bm.verts.new(self.tf @ Vector(co) if self.tf else co)
         for b, w in (bone.items() if isinstance(bone, dict) else ((bone, 1.0),)):
             v[self.dl][GROUP[b]] = w
         return v
@@ -148,6 +152,13 @@ class Builder:
         (x0, y0, z0), (x1, y1, z1) = lo, hi
         vs = [self.vert((x, y, z - (taper_front if (y == y0 and z == z1) else 0)), bone)
               for z in (z0, z1) for y in (y0, y1) for x in (x0, x1)]
+        for q in ((0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)):
+            self.face([vs[i] for i in q], m)
+
+    def obox(self, c, ax, m, bone):
+        """Yönlü kutu: c merkez, ax = (a, b, d) yarı-eksen vektörleri."""
+        c, (a, b, d) = Vector(c), (Vector(x) for x in ax)
+        vs = [self.vert(c + a * sa + b * sb + d * sd, bone) for sd in (-1, 1) for sb in (-1, 1) for sa in (-1, 1)]
         for q in ((0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)):
             self.face([vs[i] for i in q], m)
 
@@ -505,10 +516,96 @@ def telefon(B):
     B.yon.append((B.face(vs, "ekran"), Vector(((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)), 1))
 
 
+# Eldeki eşyalar animasyonun 0. karesindeki POZLU konumda kurulur (POZ, bkz. pozlu), sonra kemiğin dinlenme uzayına taşınır.
+POZ = {}
+
+
+def pozlu(arm_ob, act, frame=0):
+    """act'in frame karesi: kemik -> (pozlu uzay -> dinlenme uzayı matrisi), kemik -> (pozlu baş, pozlu kuyruk)."""
+    arm_ob.animation_data.action = act
+    bpy.context.scene.frame_set(frame)
+    pbs = arm_ob.pose.bones
+    return ({pb.name: pb.bone.matrix_local @ pb.matrix.inverted() for pb in pbs},
+            {pb.name: (pb.head.copy(), pb.tail.copy()) for pb in pbs})
+
+
+def el(k, side):
+    h, t = k[f"hand_{side}"]
+    return h.lerp(t, 0.5)
+
+
+def dik(v, *eksenler):
+    """v'nin verilen birim eksenlere dik birim bileşeni."""
+    v = Vector(v)
+    for e in eksenler:
+        v -= e * v.dot(e)
+    return v.normalized()
+
+
+def cips(B):
+    """Sol elde, göbekte duran cips paketi."""
+    tf, k = POZ["atistir"]
+    B.tf = tf["hand_L"]
+    c = el(k, "L") + Vector((0, -0.03, 0.06))
+    z = Vector((0, 0, 1))
+    B.tube(c - z * 0.1, c + z * 0.08, [(0, 0.07, 0.02), (0.12, 0.078, 0.042), (0.85, 0.078, 0.042), (1, 0.072, 0.015)], 8, "cips", "hand_L")
+    B.tube(c + z * 0.08, c + z * 0.11, [(0, 0.072, 0.015), (1, 0.074, 0.008)], 8, "cips_bant", "hand_L")
+
+
+def gamepad(B):
+    """İki elin arasında; sağ ele bağlı (oyun animasyonunda eller birlikte hareket eder)."""
+    tf, k = POZ["oyun"]
+    B.tf = tf["hand_R"]
+    l, r = el(k, "L"), el(k, "R")
+    c = (l + r) / 2
+    x = (l - r).normalized()
+    n = dik(k["head"][0] - c, x)          # yüzü oyuncuya bakar
+    y = dik((0, -1, 0), x, n)             # oyuncudan uzağa
+    w = max(0.17, (l - r).length + 0.03)
+    print(f"  gamepad: eller arasi {(l - r).length:.3f} m")
+    B.obox(c, (x * w / 2, y * 0.045, n * 0.022), "gamepad", "hand_R")
+    for s in (1, -1):  # tutamaklar oyuncuya doğru
+        B.obox(c + x * s * (w / 2 - 0.03) - y * 0.05 - n * 0.006, (x * 0.028, y * 0.04, n * 0.02), "gamepad", "hand_R")
+        B.obox(c + x * s * w * 0.22 + n * 0.024, (x * 0.012, y * 0.012, n * 0.006), "dugme" if s > 0 else "ekran", "hand_R")
+
+
+def kulaklik(B):
+    """Oyuncu kulaklığı: kafa bandı + kulaklar, dış yüzde ışıklı halka."""
+    pts, ax = [], []
+    for j in range(11):
+        t = math.radians(-82 + 164 * j / 10)
+        rad = Vector((math.sin(t), 0, math.cos(t)))
+        pts.append(HC + Vector((rad.x * 0.192, 0.01, rad.z * 0.2)))
+        ax.append((Vector((0, 0.02, 0)), rad * 0.008))
+    B.serit(pts, ax, ["kulaklik"], "head")
+    for s in (1, -1):
+        c = HC + Vector((s * 0.19, 0.01, -0.02))
+        B.ball(c, 0.032, 0.052, 0.058, 8, 4, "kulaklik", "head")
+        B.obox(c + Vector((s * 0.033, 0, 0)), (Vector((0.004, 0, 0)), Vector((0, 0.03, 0)), Vector((0, 0, 0.034))), "ekran", "head")
+
+
+def kitap(B):
+    """KPSS kitabı: sol elde, açık, telefonun hemen arkasında (telefon kitabın içinde)."""
+    tf, k = POZ["kpss"]
+    B.tf = tf["hand_L"]
+    tel = tf["hand_R"].inverted() @ Vector((-0.239, -0.0025, 0.8175))  # telefonun pozlu konumu
+    c = (tel + el(k, "L")) / 2              # sol el sol kapakta, telefon sağ sayfada
+    n = dik(k["head"][0] - c)
+    x = dik((1, 0, 0), n)
+    y = n.cross(x)
+    c -= n * 0.03
+    print(f"  kitap: sol el kitaba {(el(k, 'L') - c).length:.3f} m")
+    B.obox(c, (x * 0.15, y * 0.105, n * 0.006), "kitap", "hand_L")
+    for s in (1, -1):
+        B.obox(c + x * s * 0.073 + n * 0.012, (x * 0.07, y * 0.098, n * 0.007), "sayfa", "hand_L")
+
+
 PARCALAR = {"govde": govde, "sac_kisa": sac_kisa, "sac_daginik": sac_daginik, "sakal": sakal,
-            "sac_lider": sac_lider, "sakal_lider": sakal_lider, "telefon": telefon}
+            "sac_lider": sac_lider, "sakal_lider": sakal_lider, "telefon": telefon,
+            "cips": cips, "gamepad": gamepad, "kulaklik": kulaklik, "kitap": kitap}
 RENKLER = {"ten": "#E0B48C", "sac": "#2E1E14", "ust": "#5B6B7A", "alt": "#55575C", "corap": "#EDEDED",
-           "terlik": "#2D5BD0", "torba": "#C8977A", "telefon": "#16161A"}
+           "terlik": "#2D5BD0", "torba": "#C8977A", "telefon": "#16161A", "cips": "#E8A317", "cips_bant": "#C8282A",
+           "gamepad": "#1E1F24", "dugme": "#E04848", "kulaklik": "#18181C", "kitap": "#2E6FB8", "sayfa": "#F2EEE2"}
 
 
 def build_parts(arm_ob):
@@ -578,16 +675,79 @@ def poz_kaydir(p):
     return P
 
 
+def poz_uyu(p):
+    s = math.sin(2 * math.pi * p)               # yavaş nefes
+    P = oturus(poz())
+    for side, sg in (("L", 1), ("R", -1)):
+        P[f"thigh_{side}"] = (-80, 0, sg * 22)  # iyice yayılmış
+    P["spine"] = (-26 + 2 * s, 0, 0)
+    P["chest"] = (4 + s, 0, 0)
+    P["neck"] = (-6, 0, 0)
+    P["head"] = (-26 + 2 * s, 16, 6)            # başı geriye ve yana düşmüş
+    P["upper_arm_L"] = (-8, -6, 0)              # kollar iki yana sarkmış
+    P["lower_arm_L"] = (-16, 0, 0)
+    return ayna(P)
+
+
+def atistir_taban(sag):
+    P = oturus(poz())
+    P["spine"] = (-14, 0, 0)
+    P["chest"] = (10, 0, 0)
+    P["neck"] = (12, 0, 0)
+    P["upper_arm_L"] = (-14, -10, 0)            # sol el cipsi göbekte tutar
+    P["lower_arm_L"] = (-72, 0, -40)
+    P["upper_arm_R"], P["lower_arm_R"] = sag
+    return P
+
+
+PAKET, AGIZ = ((-14, 14, 0), (-80, 0, 50)), ((-46, -14, 0), (-128, 0, 30))  # sağ el: pakette / ağızda
+ATISTIR = anahtarlar([(0, atistir_taban(PAKET)), (0.3, atistir_taban(AGIZ)), (0.45, atistir_taban(AGIZ)),
+                      (0.8, atistir_taban(PAKET)), (1, atistir_taban(PAKET))])
+
+
+def poz_atistir(p):
+    P = ATISTIR(p)
+    P["head"] = (4 + 4 * max(0.0, math.sin(2 * math.pi * p * 4)), 0, 0)  # çiğner
+    return P
+
+
+def poz_oyun(p):
+    e = min(max((p - 0.66) / 0.06, 0.0), 1.0) * min(max((1 - p) / 0.06, 0.0), 1.0)  # son üçte bir: öfke krizi
+    e = e * e * (3 - 2 * e)
+    sars = math.sin(2 * math.pi * p * 30) * 16 * e
+    tik = max(0.0, math.sin(2 * math.pi * p * 12)) ** 4
+    P = oturus(poz())
+    P["spine"] = (-2 - 10 * e, 0, 0)            # ekrana eğilmiş, krizde geri savrulur
+    P["chest"] = (16, 0, 0)
+    P["neck"] = (16 - 10 * e, 0, 0)
+    P["head"] = (6 - 24 * e, 0, 8 * math.sin(2 * math.pi * p * 15) * e)
+    P["upper_arm_L"] = (-34 + sars, 22, 0)
+    P["lower_arm_L"] = (-92 + sars * 0.6, 0, -38)
+    P = ayna(P)
+    P["hand_L"] = P["hand_R"] = (-4 * tik, 0, 0)
+    return P
+
+
+def poz_kpss(p):
+    P = poz_kaydir(p)
+    P["upper_arm_L"] = (-34, 22, 0)             # sol el kitabı telefonun arkasında tutar
+    P["lower_arm_L"] = (-92, 0, -38)
+    return P
+
+
 # ad: (poz fonksiyonu, kare sayısı)
-ANIMS = {"otur": (poz_otur, 72), "kaydir": (poz_kaydir, 36)}
+ANIMS = {"otur": (poz_otur, 72), "kaydir": (poz_kaydir, 36), "uyu": (poz_uyu, 90), "atistir": (poz_atistir, 48),
+         "oyun": (poz_oyun, 120), "kpss": (poz_kpss, 72)}
 
 
 def build():
     sc = bpy.context.scene
     sc.render.fps = FPS
     arm_ob = build_armature()
-    build_parts(arm_ob)
     acts = {name: bake(arm_ob, name, fn, n) for name, (fn, n) in ANIMS.items()}
+    for name in ("atistir", "oyun", "kpss"):
+        POZ[name] = pozlu(arm_ob, acts[name])
+    build_parts(arm_ob)
     ad = arm_ob.animation_data
     ad.action = None
     for name, act in acts.items():
@@ -605,8 +765,9 @@ def report():
             ob.data.calc_loop_triangles()
             tri[ob.name] = len(ob.data.loop_triangles)
             print(f"  {ob.name} tris={tri[ob.name]} dims={tuple(round(d, 3) for d in ob.dimensions)}")
-    en_cok = tri["govde"] + tri["sac_lider"] + tri["sakal_lider"] + tri["telefon"]
-    print(f"  en agir kombinasyon (lider): {en_cok} ucgen")
+    esya = max(tri["cips"], tri["gamepad"] + tri["kulaklik"], tri["kitap"] + tri["telefon"])
+    en_cok = tri["govde"] + tri["sac_lider"] + tri["sakal_lider"] + esya
+    print(f"  en agir kombinasyon (lider + en agir esya): {en_cok} ucgen")
     assert en_cok < 3000, en_cok
 
 
@@ -625,8 +786,12 @@ if __name__ == "__main__":
     NORMAL = {"govde", "sac_daginik", "sakal"}
     LIDER = {"govde", "sac_lider", "sakal_lider", "telefon"}
     yollar = []
-    for i, (act, kare, gor, az) in enumerate((("otur", 18, NORMAL, 25), ("kaydir", 6, NORMAL | {"telefon"}, 25),
-                                              ("kaydir", 6, LIDER, 25), ("kaydir", 6, LIDER, 110))):
+    KPSS = NORMAL | {"kitap", "telefon"}
+    for i, (act, kare, gor, az) in enumerate((("otur", 18, NORMAL, 25), ("kaydir", 6, LIDER, 25),
+                                              ("uyu", 0, NORMAL, 25), ("atistir", 12, NORMAL | {"cips"}, 25),
+                                              ("oyun", 0, NORMAL | {"gamepad", "kulaklik"}, 25),
+                                              ("oyun", 88, LIDER - {"telefon"} | {"gamepad", "kulaklik"}, 25),
+                                              ("kpss", 6, KPSS, 25), ("kpss", 6, KPSS, 110))):
         yollar.append(tmp / f"p{i}.png")
         onizle(arm_ob, acts[act], kare, gor, yollar[-1], res=(400, 500), az=az, el=12)
     yan_yana(yollar, PNG_DIR / "genc.png")

@@ -5,7 +5,11 @@
   "hediyeOdakSn": 4,
   "hediyeler": {
     "Rose": { "eylem": "kaydir", "sureSn": 20 },
-    "TikTok": { "eylem": "kaydir", "sureSn": 40 }
+    "TikTok": { "eylem": "kaydir", "sureSn": 40 },
+    "Finger Heart": { "eylem": "uyu", "sureSn": 30 },
+    "Doughnut": { "eylem": "atistir", "sureSn": 30 },
+    "Hand Hearts": { "eylem": "oyun", "sureSn": 40 },
+    "Confetti": { "eylem": "kpss", "sureSn": 40 }
   },
   "varsayilanEylem": null
 }

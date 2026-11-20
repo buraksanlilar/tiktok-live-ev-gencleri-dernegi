@@ -63,7 +63,7 @@ function uygula(s) {
     if (!g) { g = gencKur(gencModel, u.userId); kisiler.set(u.userId, g); scene.add(g.nesne); }
     const lider = u.userId === s.lider;
     g.nesne.position.copy(lider ? TAHT : koltukYeri(u.koltuk)).add(OTURMA); // lider tahta geçer, saçı sakalı uzar
-    g.durum(lider, u.eylem === 'kaydir');
+    g.durum(lider, u.eylem);
     etiket(g.nesne, u.ad, lider);
   }
   for (const [id, g] of kisiler) if (!gorulen.has(id)) { scene.remove(g.nesne); etiketSil(g.nesne); g.birak(); kisiler.delete(id); }
