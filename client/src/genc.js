@@ -32,15 +32,20 @@ export function gencKur(model, userId) {
   let simdiki = anim.otur.play();
   simdiki.time = (h % 1000) / 1000 * simdiki.getClip().duration; // herkes aynı anda bakınmasın
 
+  let telefonSn = -1; // telefon, kol kalkarken (geçişin ortasında) ele gelir; bırakırken hemen kaybolur
   return {
     nesne: o,
     /** @param {boolean} lider @param {boolean} kaydir */
     durum(lider, kaydir) {
-      for (const ad of PARCALAR) if (parca[ad]) parca[ad].visible = ad === 'telefon' ? kaydir : lider ? ad.endsWith('_lider') : !!normal[ad];
+      for (const ad of PARCALAR) if (parca[ad] && ad !== 'telefon') parca[ad].visible = lider ? ad.endsWith('_lider') : !!normal[ad];
       const hedef = anim[kaydir ? 'kaydir' : 'otur'];
-      if (hedef !== simdiki) { hedef.reset().play(); simdiki.crossFadeTo(hedef, 0.4, false); simdiki = hedef; }
+      if (hedef !== simdiki) { hedef.reset().play(); simdiki.crossFadeTo(hedef, 0.4, false); simdiki = hedef; telefonSn = kaydir ? 0.25 : -1; }
+      if (!kaydir && parca.telefon) parca.telefon.visible = false;
     },
-    update: (dt) => mixer.update(dt),
+    update(dt) {
+      mixer.update(dt);
+      if (telefonSn >= 0 && (telefonSn -= dt) < 0 && parca.telefon) parca.telefon.visible = true;
+    },
     birak() { mixer.stopAllAction(); for (const m of Object.values(kopya)) m.dispose(); },
   };
 }

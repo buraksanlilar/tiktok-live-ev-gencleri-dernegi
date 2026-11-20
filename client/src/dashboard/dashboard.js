@@ -18,7 +18,8 @@ let bekleyen = [];
 const gonder = (olaylar) => {
   for (const o of olaylar) log({
     girdi: () => `🚪 ${o.ad} odaya girdi (koltuk ${o.koltuk + 1})`,
-    cikti: () => `👋 ${o.userId} kalktı`,
+    cikti: () => `👋 ${o.ad} kalktı (koltuk ${o.koltuk + 1})`,
+    sirada: () => `⏳ ${o.ad} sırada (${o.sira}.)`,
     hediye: () => `🎁 ${o.ad} ${o.hediye} (${o.coin} coin)`,
     liderDegisti: () => `👑 yeni lider: ${o.ad}`,
     eylem: () => `📱 ${ad(o.userId)} ${o.eylem} (${Math.round(o.sureSn)} sn)`,
@@ -47,7 +48,7 @@ setInterval(() => {
   const s = engine.snapshot();
   panelGonder({ snapshot: s, olaylar: bekleyen });
   bekleyen = [];
-  $('ozet').textContent = `${s.uyeler.length}/${s.kapasite}`;
+  $('ozet').textContent = `${s.uyeler.length}/${s.kapasite}` + (s.sira.length ? ` · sırada ${s.sira.length}: ${s.sira.slice(0, 5).join(', ')}${s.sira.length > 5 ? '…' : ''}` : '');
   $('uyeler').innerHTML = [...s.uyeler].sort((a, b) => b.coin - a.coin).map((u) =>
     `<tr><td>${u.userId === s.lider ? '👑' : ''} ${kacir(u.ad)}</td><td>${u.coin} coin</td><td>${u.eylem ? '📱 ' + u.eylem : ''}</td></tr>`).join('');
 }, 250);

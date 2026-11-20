@@ -38,14 +38,29 @@ test('hediye türüne göre eylem, süre dolunca biter', () => {
   assert.equal(e.snapshot().uyeler[0].eylem, null);
 });
 
-test('oda dolu: sessiz üye kalkar, lider kalkmaz, kimse sessiz değilse giremez', () => {
-  const { e, t } = yeni({ odaKapasite: 2, uyeZamanAsimiDk: 1 });
-  hediye(e, 'lider', 5); yorum(e, 'b');
-  yorum(e, 'c');
-  assert.equal(e.snapshot().uyeler.length, 2); // b henüz sessiz değil
-  t.s = 120;
-  yorum(e, 'c');
-  assert.deepEqual(e.snapshot().uyeler.map((u) => u.userId).sort(), ['c', 'lider']);
+const odadakiler = (e) => e.snapshot().uyeler.map((u) => u.userId).sort();
+
+test('kuyruk: oda dolunca sıraya girer, ilk giren minKalmaSn sonra ilk çıkar, lider çıkmaz', () => {
+  const { e, t } = yeni({ odaKapasite: 3, minKalmaSn: 60 });
+  hediye(e, 'lider', 5); t.s = 1; yorum(e, 'b'); t.s = 2; yorum(e, 'c');
+  t.s = 3; yorum(e, 'd'); yorum(e, 'f'); yorum(e, 'd');      // dolu: d, f sırada (d bir kez)
+  assert.deepEqual(e.snapshot().sira, ['d', 'f']);
+  t.s = 50; e.tick();
+  assert.deepEqual(odadakiler(e), ['b', 'c', 'lider']);    // henüz kimse 60 sn oturmadı
+  t.s = 61; e.tick();                                        // b (61 sn) çıkar, d girer; c (59 sn) kalır
+  assert.deepEqual(odadakiler(e), ['c', 'd', 'lider']);
+  assert.deepEqual(e.snapshot().sira, ['f']);
+  t.s = 62; e.tick();
+  assert.deepEqual(odadakiler(e), ['d', 'f', 'lider']);
+});
+
+test('bağış atan sıra beklemez, en eskinin yerine hemen girer; coin odadan çıkınca da kalır', () => {
+  const { e, t } = yeni({ odaKapasite: 2, minKalmaSn: 60 });
+  yorum(e, 'a'); t.s = 1; yorum(e, 'b'); yorum(e, 'c');
+  hediye(e, 'zengin', 10);
+  assert.deepEqual(odadakiler(e), ['b', 'zengin']);
+  assert.deepEqual(e.snapshot().sira, ['c']);
+  assert.equal(e.snapshot().lider, 'zengin');
 });
 
 test('durum kaydet/yükle', () => {

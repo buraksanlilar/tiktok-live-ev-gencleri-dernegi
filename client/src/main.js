@@ -4,6 +4,8 @@ import { oyunDinle } from './net/kanal.js';
 import { modelYukle, klonla } from './models.js';
 import { gencKur } from './genc.js';
 import { createKamera } from './kamera.js';
+import { etiket, etiketSil } from './etiket.js';
+import game from '../../config/game.json';
 
 const W = 1080, H = 1920, SIRA = 8; // koltuk ızgarası: SIRA koltuk yan yana
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game'), antialias: true });
@@ -62,12 +64,19 @@ function uygula(s) {
     const lider = u.userId === s.lider;
     g.nesne.position.copy(lider ? TAHT : koltukYeri(u.koltuk)).add(OTURMA); // lider tahta geçer, saçı sakalı uzar
     g.durum(lider, u.eylem === 'kaydir');
+    etiket(g.nesne, u.ad, lider);
   }
-  for (const [id, g] of kisiler) if (!gorulen.has(id)) { scene.remove(g.nesne); g.birak(); kisiler.delete(id); }
+  for (const [id, g] of kisiler) if (!gorulen.has(id)) { scene.remove(g.nesne); etiketSil(g.nesne); g.birak(); kisiler.delete(id); }
   son = s;
 }
 
-oyunDinle(({ snapshot } = {}) => { if (snapshot && snapshot.surum !== son?.surum) uygula(snapshot); });
+oyunDinle(({ snapshot, olaylar = [] } = {}) => {
+  if (snapshot && snapshot.surum !== son?.surum) uygula(snapshot);
+  for (const o of olaylar) {
+    const g = kisiler.get(o.userId);
+    if (o.tip === 'hediye' && g) kamera.odakla(g.nesne, game.hediyeOdakSn); // bağış atana yakın plan
+  }
+});
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
