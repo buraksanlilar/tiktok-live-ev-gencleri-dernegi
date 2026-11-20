@@ -17,6 +17,7 @@
     button.ana { background: var(--vurgu); color: #07101f; font-weight: 600; }
     .iki { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    tr { cursor: pointer; } tr:hover td { background: #1f232b; }
     td { padding: 4px 6px; border-bottom: 1px solid var(--cizgi); }
     #gunluk { font: 12px/1.5 ui-monospace, monospace; color: var(--soluk); white-space: pre-wrap; }
     @media (max-width: 1000px) { body { grid-template-columns: 1fr; } }
@@ -26,16 +27,29 @@
   <section>
     <h2>Kontrol</h2>
     <div>TikTok: <span id="tiktokDurum">bekleniyor…</span></div>
-    <label>Hesap <input id="u" value="test1" /></label>
-    <label>Hediye adı (config/game.json hediyeler) <input id="hediyeAd" value="Rose" list="hediyeListe" /></label>
-    <datalist id="hediyeListe"></datalist>
-    <label>Coin <input id="coin" type="number" value="1" min="1" /></label>
+    <label>Hesap (odadaki satıra tıklayınca seçilir) <input id="u" value="test1" /></label>
+    <label>Yorum <input id="metin" value="selam" /></label>
     <div class="iki">
       <button id="yorum">💬 Yorum at</button>
-      <button id="hediye" class="ana">🎁 Hediye at</button>
-      <button id="rastgele">🎲 10 yorumcu</button>
-      <button id="sifirla">Odayı sıfırla</button>
+      <button id="takip">➕ Takip et</button>
     </div>
+    <h2 style="margin-top:16px">Hediye</h2>
+    <div class="iki" id="hediyeler"></div>
+    <div class="iki">
+      <input id="hediyeAd" placeholder="Başka hediye adı" />
+      <input id="coin" type="number" value="1" min="1" title="Coin" />
+    </div>
+    <div class="iki"><button id="hediye" class="ana">🎁 Hediye at</button><button id="lider">👑 Lider yap</button></div>
+    <h2 style="margin-top:16px">Rastgele</h2>
+    <div class="iki">
+      <input id="kisiSayi" type="number" value="10" min="1" title="Kişi sayısı" />
+      <button id="rastgele">🎲 Yorumcu ekle</button>
+      <button id="rHediye">🎲 Rastgele hediye</button>
+      <button id="rOlay">🎲 Rastgele olay</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px"><input id="akis" type="checkbox" /> Otomatik akış
+      <input id="hiz" type="number" value="2" min="0.1" step="0.5" style="width:70px" /> olay/sn</label>
+    <div class="iki"><button id="sifirla">Odayı sıfırla</button></div>
     <p><a href="/index.html" target="_blank" rel="noopener" style="color:var(--vurgu)">Oyunu aç ↗</a></p>
   </section>
   <section><h2>Oda <span id="ozet"></span></h2><table id="uyeler"></table></section>
